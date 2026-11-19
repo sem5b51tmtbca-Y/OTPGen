@@ -1,0 +1,340 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OTP Generator</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+            padding: 20px;
+        }
+
+        .panel {
+            background: white;
+            max-width: 480px;
+            margin: auto;
+            padding: 18px;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.15);
+        }
+
+        .panel-large {
+            max-width: 650px;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            width: 95px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            min-width: 0;
+        }
+
+      
+.gradient-button {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    border: 2px solid rgb(0,70,140);
+    border-radius: 6px;
+    background: rgb(0,70,140);
+}
+
+.gradient-button:hover {
+    background: rgb(0,90,170);
+}
+
+        .otp-layout {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .otp-input-section {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .otp-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .otp-row label {
+            width: 65px;
+        }
+
+        .qr-picture-box {
+            width: 170px;
+            height: 170px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        #qrcode {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #appPanel {
+            display: none;
+        }
+
+        @media (max-width: 520px) {
+            .otp-layout {
+                flex-direction: column;
+            }
+
+            .otp-input-section {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LOGIN PANEL -->
+    <div class="panel" id="loginPanel">
+
+        <h3 style="text-align:center">Login</h3>
+
+        <div class="row">
+            <label>User:</label>
+            <input type="text" id="loginUser">
+        </div>
+
+        <div class="row">
+            <label>Password:</label>
+            <input type="password" id="loginPass">
+        </div>
+
+        <button class="gradient-button" onclick="login()">
+            Login
+        </button>
+
+    </div>
+
+
+    <!-- OTP GENERATOR PANEL -->
+    <div class="panel panel-large" id="appPanel">
+
+        <h3 style="text-align:center">OTP Generator</h3>
+
+        <div class="otp-layout">
+
+            <div class="otp-input-section">
+
+                <div class="otp-row">
+                    <label>ID :</label>
+                    <input
+                        type="text"
+                        id="TxtID"
+                        placeholder="Enter ID"
+                        oninput="updateQRCode()">
+                </div>
+
+                <div class="otp-row">
+                    <label>OTP :</label>
+                    <input
+                        type="text"
+                        id="TxtOTP"
+                        readonly>
+                </div>
+
+                <button
+                    class="gradient-button"
+                    id="BtnOTPGenerate"
+                    onclick="generateOTP()">
+
+                    OTP Generate
+
+                </button>
+
+            </div>
+
+            <div class="qr-picture-box" id="PictureBoxQR">
+                <div id="qrcode"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        // LOGIN DETAILS
+        const USERNAME = "Unipro007";
+        const PASSWORD = "UniproService@2007";
+
+
+        // LOGIN FUNCTION
+        function login() {
+
+            const u = document.getElementById("loginUser").value.trim();
+            const p = document.getElementById("loginPass").value.trim();
+
+            if (u === USERNAME && p === PASSWORD) {
+
+                document.getElementById("loginPanel").style.display = "none";
+                document.getElementById("appPanel").style.display = "block";
+
+            } else {
+
+                alert("Invalid username or password");
+
+            }
+        }
+
+
+        // GENERATE QR CODE FROM FULL MACHINE ID
+        function updateQRCode() {
+
+            const machineID = document.getElementById("TxtID").value.trim();
+            const qrBox = document.getElementById("qrcode");
+
+            qrBox.innerHTML = "";
+
+            if (machineID === "") {
+                return;
+            }
+
+            if (typeof QRCode === "undefined") {
+                qrBox.textContent = "QR library unavailable";
+                return;
+            }
+
+            new QRCode(qrBox, {
+                text: machineID,
+                width: 150,
+                height: 150,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.Q
+            });
+        }
+
+
+        // GET SHORT MACHINE ID
+        function getShortMachineID(shortMachineID) {
+
+            if (!shortMachineID || shortMachineID.length < 4) {
+                return "";
+            }
+
+            const thirdDigit = shortMachineID.substring(2, 3);
+            const lastFourDigits = shortMachineID.substring(
+                shortMachineID.length - 4
+            );
+
+            return thirdDigit + lastFourDigits;
+        }
+
+
+        // GET CURRENT TIME IN HH:mm FORMAT
+        function getCurrentTimeSlot() {
+
+            const now = new Date();
+
+            const hours = String(now.getHours()).padStart(2, "0");
+            const minutes = String(now.getMinutes()).padStart(2, "0");
+
+            return hours + ":" + minutes;
+        }
+
+
+        // GENERATE OTP
+        async function generateOTP() {
+
+            const fullMachineID = document.getElementById("TxtID").value.trim();
+
+            if (fullMachineID === "") {
+
+                alert("Please enter the MachineID.");
+                return;
+
+            }
+
+            if (fullMachineID.length < 4) {
+
+                alert("Machine ID must contain at least 4 characters.");
+                return;
+
+            }
+
+            try {
+
+                const machineID = getShortMachineID(fullMachineID);
+
+                const currentTime = getCurrentTimeSlot();
+
+                const combined = machineID + "|" + currentTime;
+
+                // SHA256 HASH
+                const encoder = new TextEncoder();
+
+                const data = encoder.encode(combined);
+
+                const hashBuffer = await crypto.subtle.digest(
+                    "SHA-256",
+                    data
+                );
+
+                // GET FIRST 4 BYTES AS LITTLE-ENDIAN UINT32
+                const hashArray = new DataView(hashBuffer);
+
+                const value = hashArray.getUint32(0, true);
+
+                // SAME CALCULATION AS C#
+                const generatedKey = String(value % 1000000).padStart(6, "0");
+
+                document.getElementById("TxtOTP").value = generatedKey;
+
+                // ENSURE QR CODE IS DISPLAYED
+                updateQRCode();
+
+            } catch (error) {
+
+                alert("OTP generation failed. Please use HTTPS or a supported browser.");
+
+                console.error(error);
+
+            }
+        }
+
+    </script>
+
+</body>
+</html>
