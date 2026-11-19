@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>OTP Generator</title>
 
+    <!-- QR Code Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
@@ -34,7 +35,7 @@
         }
 
         label {
-            width: 110px;
+            width: 95px;
             font-weight: bold;
             flex-shrink: 0;
         }
@@ -110,17 +111,6 @@
             display: none;
         }
 
-        .section-title {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .validation-section {
-            border-top: 1px solid #ddd;
-            margin-top: 25px;
-            padding-top: 20px;
-        }
-
         @media (max-width: 520px) {
             .otp-layout {
                 flex-direction: column;
@@ -138,7 +128,7 @@
     <!-- LOGIN PANEL -->
     <div class="panel" id="loginPanel">
 
-        <h3 class="section-title">Login</h3>
+        <h3 style="text-align:center">Login</h3>
 
         <div class="row">
             <label>User:</label>
@@ -160,29 +150,32 @@
     <!-- OTP GENERATOR PANEL -->
     <div class="panel panel-large" id="appPanel">
 
-        <h3 class="section-title">OTP Generator</h3>
+        <h3 style="text-align:center">OTP Generator</h3>
 
         <div class="otp-layout">
 
             <div class="otp-input-section">
 
+                <!-- MACHINE ID -->
                 <div class="otp-row">
                     <label>ID :</label>
                     <input
                         type="text"
-                        id="TxtID"
-                        placeholder="Enter ID"
+                        id="TxtMachinID"
+                        placeholder="Enter Machine ID"
                         oninput="updateQRCode()">
                 </div>
 
+                <!-- GENERATED OTP -->
                 <div class="otp-row">
                     <label>OTP :</label>
                     <input
                         type="text"
-                        id="TxtOTP"
+                        id="TxtKey"
                         readonly>
                 </div>
 
+                <!-- GENERATE BUTTON -->
                 <button
                     class="gradient-button"
                     id="BtnOTPGenerate"
@@ -194,34 +187,10 @@
 
             </div>
 
+            <!-- QR CODE PICTURE BOX -->
             <div class="qr-picture-box" id="PictureBoxQR">
                 <div id="qrcode"></div>
             </div>
-
-        </div>
-
-
-        <!-- ACTIVATION KEY VALIDATION -->
-        <div class="validation-section">
-
-            <h3 class="section-title">Activation Key Validation</h3>
-
-            <div class="row">
-                <label>Key :</label>
-                <input
-                    type="text"
-                    id="TxtActivationKey"
-                    placeholder="Enter Activation Key"
-                    maxlength="6">
-            </div>
-
-            <button
-                class="gradient-button"
-                onclick="validateKey()">
-
-                Validate Activation Key
-
-            </button>
 
         </div>
 
@@ -230,12 +199,18 @@
 
     <script>
 
+        // =====================================
         // LOGIN DETAILS
+        // =====================================
+
         const USERNAME = "Unipro007";
         const PASSWORD = "UniproService@2007";
 
 
+        // =====================================
         // LOGIN FUNCTION
+        // =====================================
+
         function login() {
 
             const u = document.getElementById("loginUser").value.trim();
@@ -254,10 +229,28 @@
         }
 
 
-        // GENERATE QR CODE FROM FULL MACHINE ID
+        // =====================================
+        // GET CURRENT TIME SLOT
+        // SAME AS C# DateTime.Now.ToString("HH")
+        // =====================================
+
+        function getCurrentTimeSlot() {
+
+            const now = new Date();
+
+            return String(now.getHours()).padStart(2, "0");
+        }
+
+
+        // =====================================
+        // GENERATE QR CODE
+        // SAME AS C# GenerateQRCode()
+        // =====================================
+
         function updateQRCode() {
 
-            const machineID = document.getElementById("TxtID").value.trim();
+            const machineID = document.getElementById("TxtMachinID").value.trim();
+
             const qrBox = document.getElementById("qrcode");
 
             qrBox.innerHTML = "";
@@ -282,7 +275,11 @@
         }
 
 
+        // =====================================
         // GET SHORT MACHINE ID
+        // SAME AS C# GetShortMachineID()
+        // =====================================
+
         function getShortMachineID(shortMachineID) {
 
             if (!shortMachineID || shortMachineID.length < 4) {
@@ -299,21 +296,18 @@
         }
 
 
-        // GET CURRENT TIME SLOT
-        // SAME AS C#: DateTime.Now.ToString("HH")
-        function getCurrentTimeSlot() {
+        // =====================================
+        // GENERATE CUSTOM KEY
+        // SAME AS C# GenerateCustomKey()
+        // =====================================
 
-            const now = new Date();
+        async function generateCustomKey(machineID) {
 
-            return String(now.getHours()).padStart(2, "0");
-        }
+            const currentTime = getCurrentTimeSlot();
 
+            const combined = machineID + "|" + currentTime;
 
-        // GENERATE SHA256 OTP
-        async function generateKey(machineID, timeSlot) {
-
-            const combined = machineID + "|" + timeSlot;
-
+            // SHA256 HASH
             const encoder = new TextEncoder();
 
             const data = encoder.encode(combined);
@@ -323,21 +317,26 @@
                 data
             );
 
-            // SAME AS C#: BitConverter.ToUInt32(hash, 0)
-            // true = Little Endian
+            // SAME AS C# BitConverter.ToUInt32(hash, 0)
+            // Little Endian = true
 
             const hashArray = new DataView(hashBuffer);
 
             const value = hashArray.getUint32(0, true);
 
+            // SAME AS C# value % 1000000, D6
             return String(value % 1000000).padStart(6, "0");
         }
 
 
-        // GENERATE OTP
+        // =====================================
+        // OTP GENERATE BUTTON
+        // SAME AS C# button1_Click()
+        // =====================================
+
         async function generateOTP() {
 
-            const fullMachineID = document.getElementById("TxtID").value.trim();
+            const fullMachineID = document.getElementById("TxtMachinID").value.trim();
 
             if (fullMachineID === "") {
 
@@ -355,111 +354,21 @@
 
             try {
 
+                // Get Short Machine ID
                 const machineID = getShortMachineID(fullMachineID);
 
-                const currentTime = getCurrentTimeSlot();
+                // Generate OTP
+                const generatedKey = await generateCustomKey(machineID);
 
-                const generatedKey = await generateKey(
-                    machineID,
-                    currentTime
-                );
+                // Display OTP
+                document.getElementById("TxtKey").value = generatedKey;
 
-                document.getElementById("TxtOTP").value = generatedKey;
-
+                // Update QR Code
                 updateQRCode();
 
             } catch (error) {
 
                 alert("OTP generation failed. Please use HTTPS or a supported browser.");
-
-                console.error(error);
-
-            }
-        }
-
-
-        // VALIDATE ACTIVATION KEY
-        // SAME LOGIC AS C# ValidateActivationKey()
-        async function validateActivationKey(machineID, enteredKey) {
-
-            const now = new Date();
-
-            for (let i = -15; i <= 15; i++) {
-
-                const checkTime = new Date(
-                    now.getTime() + i * 60000
-                );
-
-                const checkHours = String(
-                    checkTime.getHours()
-                ).padStart(2, "0");
-
-                const generatedKey = await generateKey(
-                    machineID,
-                    checkHours
-                );
-
-                if (generatedKey === enteredKey.trim()) {
-
-                    return true;
-
-                }
-            }
-
-            return false;
-        }
-
-
-        // VALIDATE BUTTON CLICK
-        async function validateKey() {
-
-            const fullMachineID = document.getElementById("TxtID").value.trim();
-
-            const enteredKey = document.getElementById("TxtActivationKey").value.trim();
-
-            if (fullMachineID === "") {
-
-                alert("Please enter the MachineID.");
-                return;
-
-            }
-
-            if (fullMachineID.length < 4) {
-
-                alert("Machine ID must contain at least 4 characters.");
-                return;
-
-            }
-
-            if (enteredKey === "") {
-
-                alert("Please enter the Activation Key.");
-                return;
-
-            }
-
-            const machineID = getShortMachineID(fullMachineID);
-
-            try {
-
-                const isValid = await validateActivationKey(
-                    machineID,
-                    enteredKey
-                );
-
-                if (isValid) {
-
-                    alert("Activation Successful!");
-
-                } else {
-
-                    alert("Invalid Activation Key!");
-
-                }
-
-            } catch (error) {
-
-                alert("Validation failed. Please use HTTPS or a supported browser.");
 
                 console.error(error);
 
