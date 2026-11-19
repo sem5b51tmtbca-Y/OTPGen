@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,7 +17,7 @@
         .panel {
             background: white;
             max-width: 480px;
-            margin: auto;
+            margin: 30px auto;
             padding: 18px;
             border-radius: 6px;
             box-shadow: 0 0 10px rgba(0,0,0,0.15);
@@ -35,8 +34,9 @@
         }
 
         label {
-            width: 95px;
+            width: 110px;
             font-weight: bold;
+            flex-shrink: 0;
         }
 
         input[type="text"],
@@ -49,22 +49,21 @@
             min-width: 0;
         }
 
-      
-.gradient-button {
-    width: 100%;
-    padding: 10px;
-    font-size: 16px;
-    font-weight: bold;
-    color: white;
-    cursor: pointer;
-    border: 2px solid rgb(0,70,140);
-    border-radius: 6px;
-    background: rgb(0,70,140);
-}
+        .gradient-button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            border: 2px solid rgb(0,70,140);
+            border-radius: 6px;
+            background: rgb(0,70,140);
+        }
 
-.gradient-button:hover {
-    background: rgb(0,90,170);
-}
+        .gradient-button:hover {
+            background: rgb(0,90,170);
+        }
 
         .otp-layout {
             display: flex;
@@ -111,6 +110,17 @@
             display: none;
         }
 
+        .section-title {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .validation-section {
+            border-top: 1px solid #ddd;
+            margin-top: 25px;
+            padding-top: 20px;
+        }
+
         @media (max-width: 520px) {
             .otp-layout {
                 flex-direction: column;
@@ -128,7 +138,7 @@
     <!-- LOGIN PANEL -->
     <div class="panel" id="loginPanel">
 
-        <h3 style="text-align:center">Login</h3>
+        <h3 class="section-title">Login</h3>
 
         <div class="row">
             <label>User:</label>
@@ -150,7 +160,7 @@
     <!-- OTP GENERATOR PANEL -->
     <div class="panel panel-large" id="appPanel">
 
-        <h3 style="text-align:center">OTP Generator</h3>
+        <h3 class="section-title">OTP Generator</h3>
 
         <div class="otp-layout">
 
@@ -187,6 +197,31 @@
             <div class="qr-picture-box" id="PictureBoxQR">
                 <div id="qrcode"></div>
             </div>
+
+        </div>
+
+
+        <!-- ACTIVATION KEY VALIDATION -->
+        <div class="validation-section">
+
+            <h3 class="section-title">Activation Key Validation</h3>
+
+            <div class="row">
+                <label>Key :</label>
+                <input
+                    type="text"
+                    id="TxtActivationKey"
+                    placeholder="Enter Activation Key"
+                    maxlength="6">
+            </div>
+
+            <button
+                class="gradient-button"
+                onclick="validateKey()">
+
+                Validate Activation Key
+
+            </button>
 
         </div>
 
@@ -255,6 +290,7 @@
             }
 
             const thirdDigit = shortMachineID.substring(2, 3);
+
             const lastFourDigits = shortMachineID.substring(
                 shortMachineID.length - 4
             );
@@ -263,15 +299,38 @@
         }
 
 
-        // GET CURRENT TIME IN HH:mm FORMAT
+        // GET CURRENT TIME SLOT
+        // SAME AS C#: DateTime.Now.ToString("HH")
         function getCurrentTimeSlot() {
 
             const now = new Date();
 
-            const hours = String(now.getHours()).padStart(2, "0");
-            const minutes = String(now.getMinutes()).padStart(2, "0");
+            return String(now.getHours()).padStart(2, "0");
+        }
 
-            return hours + ":" + minutes;
+
+        // GENERATE SHA256 OTP
+        async function generateKey(machineID, timeSlot) {
+
+            const combined = machineID + "|" + timeSlot;
+
+            const encoder = new TextEncoder();
+
+            const data = encoder.encode(combined);
+
+            const hashBuffer = await crypto.subtle.digest(
+                "SHA-256",
+                data
+            );
+
+            // SAME AS C#: BitConverter.ToUInt32(hash, 0)
+            // true = Little Endian
+
+            const hashArray = new DataView(hashBuffer);
+
+            const value = hashArray.getUint32(0, true);
+
+            return String(value % 1000000).padStart(6, "0");
         }
 
 
@@ -300,34 +359,107 @@
 
                 const currentTime = getCurrentTimeSlot();
 
-                const combined = machineID + "|" + currentTime;
-
-                // SHA256 HASH
-                const encoder = new TextEncoder();
-
-                const data = encoder.encode(combined);
-
-                const hashBuffer = await crypto.subtle.digest(
-                    "SHA-256",
-                    data
+                const generatedKey = await generateKey(
+                    machineID,
+                    currentTime
                 );
-
-                // GET FIRST 4 BYTES AS LITTLE-ENDIAN UINT32
-                const hashArray = new DataView(hashBuffer);
-
-                const value = hashArray.getUint32(0, true);
-
-                // SAME CALCULATION AS C#
-                const generatedKey = String(value % 1000000).padStart(6, "0");
 
                 document.getElementById("TxtOTP").value = generatedKey;
 
-                // ENSURE QR CODE IS DISPLAYED
                 updateQRCode();
 
             } catch (error) {
 
                 alert("OTP generation failed. Please use HTTPS or a supported browser.");
+
+                console.error(error);
+
+            }
+        }
+
+
+        // VALIDATE ACTIVATION KEY
+        // SAME LOGIC AS C# ValidateActivationKey()
+        async function validateActivationKey(machineID, enteredKey) {
+
+            const now = new Date();
+
+            for (let i = -15; i <= 15; i++) {
+
+                const checkTime = new Date(
+                    now.getTime() + i * 60000
+                );
+
+                const checkHours = String(
+                    checkTime.getHours()
+                ).padStart(2, "0");
+
+                const generatedKey = await generateKey(
+                    machineID,
+                    checkHours
+                );
+
+                if (generatedKey === enteredKey.trim()) {
+
+                    return true;
+
+                }
+            }
+
+            return false;
+        }
+
+
+        // VALIDATE BUTTON CLICK
+        async function validateKey() {
+
+            const fullMachineID = document.getElementById("TxtID").value.trim();
+
+            const enteredKey = document.getElementById("TxtActivationKey").value.trim();
+
+            if (fullMachineID === "") {
+
+                alert("Please enter the MachineID.");
+                return;
+
+            }
+
+            if (fullMachineID.length < 4) {
+
+                alert("Machine ID must contain at least 4 characters.");
+                return;
+
+            }
+
+            if (enteredKey === "") {
+
+                alert("Please enter the Activation Key.");
+                return;
+
+            }
+
+            const machineID = getShortMachineID(fullMachineID);
+
+            try {
+
+                const isValid = await validateActivationKey(
+                    machineID,
+                    enteredKey
+                );
+
+                if (isValid) {
+
+                    alert("Activation Successful!");
+
+                } else {
+
+                    alert("Invalid Activation Key!");
+
+                }
+
+            } catch (error) {
+
+                alert("Validation failed. Please use HTTPS or a supported browser.");
 
                 console.error(error);
 
