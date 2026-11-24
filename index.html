@@ -65,6 +65,17 @@
         .gradient-button:hover {
             background: rgb(0,90,170);
         }
+        /* OTP Generate and Clear button layout */
+        .button-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .button-row .gradient-button {
+            width: 160px;
+        }
 
         .otp-layout {
             display: flex;
@@ -201,14 +212,17 @@
                 </div>
 
                 <!-- GENERATE BUTTON -->
-                <button
-                    class="gradient-button"
-                    id="BtnOTPGenerate"
-                    onclick="generateOTP()">
+              <div class="button-row">
 
-                    OTP Generate
+                   <button class="gradient-button" onclick="generateOTP()">
+                   OTP Generate
+                  </button>
 
-                </button>
+                   <button class="gradient-button" onclick="clearFields()">
+                   Clear
+                  </button>
+
+              </div>
 
             </div>
 
@@ -242,6 +256,10 @@
             const p = document.getElementById("loginPass").value.trim();
 
             if (u === USERNAME && p === PASSWORD) {
+
+                // save login in browser
+              localStorage.setItem("OTPGen_savedUser", u);
+              localStorage.setItem("OTPGen_savedPass", p);
 
                 document.getElementById("loginPanel").style.display = "none";
                 document.getElementById("appPanel").style.display = "block";
@@ -323,6 +341,13 @@
             return thirdDigit + lastFourDigits;
         }
 
+        function clearFields() {
+             document.getElementById("TxtMachinID").value = "";
+             document.getElementById("TxtKey").value = "";
+
+            // Clear QR code if available
+            document.getElementById("qrcode").innerHTML = "";
+        }
 
         // =====================================
         // GENERATE CUSTOM KEY
@@ -401,8 +426,18 @@
                 console.error(error);
 
             }
-        }
 
+        }
+// Restore saved login information when website opens
+window.onload = function () {
+    const savedUser = localStorage.getItem("OTPGen_savedUser");
+    const savedPass = localStorage.getItem("OTPGen_savedPass");
+
+    if (savedUser && savedPass) {
+        document.getElementById("loginUser").value = savedUser;
+        document.getElementById("loginPass").value = savedPass;
+    }
+};
     </script>
 
 </body>
